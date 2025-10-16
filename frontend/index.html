@@ -2,35 +2,46 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <title>Multilingual AI Voice Assistant</title>
+    <title>AI Voice Assistant</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background-color: #121212; color: #e0e0e0; }
-        .container { width: 90%; max-width: 700px; display: flex; flex-direction: column; height: 95vh; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 100vh; margin: 0; background-color: #121212; color: #e0e0e0;
+        }
+        .container { width: 90%; max-width: 800px; display: flex; flex-direction: column; height: 95vh; }
         h1 { text-align: center; color: #bb86fc; }
-        .chat-box { flex-grow: 1; border: 1px solid #333; padding: 20px; background: #1e1e1e; border-radius: 10px; overflow-y: auto; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .chat-box { flex-grow: 1; border: 1px solid #333; padding: 20px; background: #1e1e1e; border-radius: 10px; overflow-y: auto; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); scroll-behavior: smooth; }
         .message-container { display: flex; margin-bottom: 15px; max-width: 100%; }
         .message { padding: 10px 15px; border-radius: 18px; line-height: 1.4; max-width: 85%; word-wrap: break-word; }
         .user-container { justify-content: flex-end; }
         .user { color: #121212; background-color: #bb86fc; }
         .ai-container { justify-content: flex-start; }
         .ai { color: #121212; background-color: #03dac6; }
-        .error-container { justify-content: center; }
-        .error { color: #cf6679; font-style: italic; text-align: center; }
+        .system-container { justify-content: center; }
+        .system { color: #aaa; font-style: italic; text-align: center; font-size: 0.9em; }
         .controls { text-align: center; }
-        button { padding: 12px 24px; font-size: 16px; margin: 5px; background-color: #bb86fc; color: #121212; font-weight: bold; border: none; border-radius: 50px; cursor: pointer; transition: background-color 0.3s ease, transform 0.1s ease; min-width: 180px; }
+        .button-row { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .file-upload-label, button { padding: 12px 24px; font-size: 16px; margin: 5px; background-color: #bb86fc; color: #121212; font-weight: bold; border: none; border-radius: 50px; cursor: pointer; transition: all 0.2s ease; min-width: auto; }
+        .file-upload-label { background-color: #333; color: #e0e0e0; }
         button:hover { background-color: #9e47f5; }
-        button:active { transform: scale(0.98); }
+        .file-upload-label:hover { background-color: #555; }
         button:disabled { background-color: #444; color: #888; cursor: not-allowed; }
+        .generated-media { max-width: 100%; border-radius: 10px; margin-top: 10px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Multilingual Voice AI Assistant</h1>
+    <h1>AI Voice Assistant</h1>
     <div class="chat-box" id="chat-box"></div>
     <div class="controls">
-        <button id="start">🎤 Start Listening</button>
-        <button id="stop" disabled>🛑 Stop Listening</button>
+        <div class="button-row">
+            <label for="image-file-input" class="file-upload-label">📁 Choose File for Analysis</label>
+            <input type="file" id="image-file-input" accept="image/*" style="display: none;">
+            <button id="start">🎤 Start Listening</button>
+            <button id="stop" disabled>🛑 Stop Listening</button>
+        </div>
     </div>
 </div>
 
@@ -38,159 +49,196 @@
     const chatBox = document.getElementById("chat-box");
     const startBtn = document.getElementById("start");
     const stopBtn = document.getElementById("stop");
+    const imageFileInput = document.getElementById("image-file-input");
 
     const BACKEND_URL = "http://localhost:8080/chat";
-
-    let isSpeaking = false;
-    let isMicManuallyStopped = true;
-    let isProcessing = false;
-    let currentLang = navigator.language || "en-US";
+    let isSpeaking = false, isMicManuallyStopped = true, isProcessing = false, recognition;
+    let imageAsDataUrl = "";
     let voices = [];
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-        appendMessage("System", "Sorry, your browser does not support the Web Speech API. Please try Google Chrome or Edge.", "error");
-        startBtn.disabled = true;
-    }
-    const recognition = new SpeechRecognition();
-    recognition.interimResults = false;
-    recognition.continuous = false;
-    recognition.lang = currentLang;
-
-    function populateVoiceList() {
-        voices = speechSynthesis.getVoices();
-    }
-    populateVoiceList();
-    if (speechSynthesis.onvoiceschanged !== undefined) {
-        speechSynthesis.onvoiceschanged = populateVoiceList;
-    }
+    let userCoordinates = {};
 
     function appendMessage(sender, text, type = "ai") {
         const container = document.createElement("div");
         container.className = "message-container " + type + "-container";
         const div = document.createElement("div");
         div.className = "message " + type;
-        div.textContent = text;
+        if (text.startsWith("data:video/mp4")) {
+            const video = document.createElement("video");
+            video.src = text;
+            video.controls = true;
+            video.className = "generated-media";
+            div.appendChild(video);
+        } else if (text.startsWith("data:audio/")) {
+            const audio = document.createElement("audio");
+            audio.src = text;
+            audio.controls = true;
+            audio.className = "generated-media";
+            div.appendChild(audio);
+        } else {
+            const urlRegex = /(https?:\/\/.*\.(?:png|jpg|jpeg|gif|webp)|data:image\/[^;]+;base64,[^"]+)/i;
+            const match = text.match(urlRegex);
+            if (match) {
+                const parts = text.split(match[0]);
+                if (parts[0].trim()) div.appendChild(document.createTextNode(parts[0].trim()));
+                const img = document.createElement("img");
+                img.src = match[0];
+                img.alt = "Generated Media";
+                img.className = "generated-media";
+                div.appendChild(img);
+                if (parts[1] && parts[1].trim()) div.appendChild(document.createTextNode(parts[1].trim()));
+            } else { div.textContent = text; }
+        }
         container.appendChild(div);
         chatBox.appendChild(container);
         chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    function speak(text, langCode) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = langCode || "en-US";
-
-        let matchedVoice = voices.find(v => v.lang === langCode);
-        if (!matchedVoice) {
-            matchedVoice = voices.find(v => v.lang.startsWith(langCode.split('-')[0]));
-        }
-        if (matchedVoice) utterance.voice = matchedVoice;
-
-        isSpeaking = true;
+    function speak(text, langCode = "en-US") {
+        if (text.startsWith("data:")) text = "Here is the media I created for you.";
         speechSynthesis.cancel();
-        recognition.abort();
-
+        if (recognition) recognition.abort();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = langCode;
+        let matchedVoice = voices.find(v => v.lang === langCode) || voices.find(v => v.lang.startsWith(langCode.split('-')[0]));
+        if (matchedVoice) utterance.voice = matchedVoice;
+        isSpeaking = true;
         utterance.onend = () => {
             isSpeaking = false;
-            if (!isMicManuallyStopped) {
-                tryToStartRecognition();
-            }
+            if (!isMicManuallyStopped) tryToStartRecognition();
         };
         speechSynthesis.speak(utterance);
     }
 
     function tryToStartRecognition() {
-        if (isSpeaking || isProcessing || isMicManuallyStopped) {
-            return;
-        }
+        if (isSpeaking || isProcessing || isMicManuallyStopped || !recognition) return;
         try {
-            recognition.lang = currentLang;
+            recognition.lang = navigator.language || 'en-US';
             recognition.start();
-        } catch(e) {
-            console.warn("Could not start recognition, likely already started.", e.name);
+        } catch (e) { console.warn("Recognition start failed.", e.name); }
+    }
+
+    function getLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(position => {
+                userCoordinates.latitude = position.coords.latitude;
+                userCoordinates.longitude = position.coords.longitude;
+                console.log("Location obtained:", userCoordinates);
+            }, () => {
+                appendMessage("System", "Could not get location. Please allow location access.", "system");
+            });
+        } else {
+            appendMessage("System", "Geolocation is not supported by this browser.", "system");
         }
     }
 
-    recognition.onstart = () => {
-        startBtn.textContent = "🎧 Listening...";
-        startBtn.style.backgroundColor = "#03dac6";
-    };
+    imageFileInput.addEventListener("change", (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            imageAsDataUrl = e.target.result;
+            appendMessage("System", `File "${file.name}" is ready for analysis.`, "system");
+            speak(`File ready. Ask a question about the image.`);
+        };
+        reader.readAsDataURL(file);
+    });
 
-    recognition.onresult = async (event) => {
-        const transcript = event.results[event.results.length - 1][0].transcript.trim();
-        appendMessage("You", transcript, "user");
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+        recognition = new SpeechRecognition();
+        recognition.interimResults = false;
+        recognition.continuous = false;
 
-        isProcessing = true;
-        startBtn.textContent = "🧠 Processing...";
-        startBtn.disabled = true;
-        stopBtn.disabled = true;
+        recognition.onresult = async (event) => {
+            const transcript = event.results[event.results.length - 1][0].transcript.trim();
+            const detectedLang = recognition.lang;
+            const imageUrlForBackend = imageAsDataUrl;
+            const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-        try {
-            const response = await fetch(BACKEND_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message: transcript }),
-                credentials: 'include'
-            });
-            const data = await response.json();
-            if (data.reply) {
-                appendMessage("AI", data.reply, "ai");
-                currentLang = data.lang || "en-US";
-                speak(data.reply, currentLang);
-            } else {
-                appendMessage("Error", data.error || "No reply received", "error");
+            imageAsDataUrl = "";
+            imageFileInput.value = "";
+
+            appendMessage("You", transcript, "user");
+            isProcessing = true;
+            startBtn.textContent = "🧠 Processing...";
+            startBtn.disabled = true;
+            stopBtn.disabled = true;
+
+            try {
+                const response = await fetch(BACKEND_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        message: transcript,
+                        imageUrl: imageUrlForBackend,
+                        lang: detectedLang,
+                        location: userCoordinates,
+                        timeZone: userTimeZone
+                    }),
+                });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                if (data.reply) {
+                    appendMessage("AI", data.reply, "ai");
+                    speak(data.reply, data.lang);
+                } else {
+                    appendMessage("Error", data.error || "No reply received", "error");
+                }
+            } catch (err) {
+                console.error("API error:", err);
+                const errorMsg = "Could not connect to the AI backend. Ensure it is running.";
+                appendMessage("Error", errorMsg, "error");
+                speak(errorMsg);
+            } finally {
+                isProcessing = false;
+                startBtn.disabled = false;
+                stopBtn.disabled = isMicManuallyStopped;
+                startBtn.textContent = "🎤 Start Listening";
+                startBtn.style.backgroundColor = "#bb86fc";
+                if (!isSpeaking && !isMicManuallyStopped) tryToStartRecognition();
             }
-        } catch (err) {
-            console.error("API error:", err);
-            appendMessage("Error", "Could not connect to the AI backend. Please ensure it is running.", "error");
-        } finally {
-            isProcessing = false;
-            startBtn.disabled = false;
-            stopBtn.disabled = isMicManuallyStopped;
+        };
+
+        recognition.onstart = () => { startBtn.textContent = "🎧 Listening..."; startBtn.style.backgroundColor = "#03dac6"; };
+        recognition.onerror = (event) => { if (event.error !== 'aborted') appendMessage("Error", "Microphone error: " + event.error, "error"); };
+        recognition.onend = () => {
             startBtn.textContent = "🎤 Start Listening";
             startBtn.style.backgroundColor = "#bb86fc";
+            if (!isProcessing && !isMicManuallyStopped) tryToStartRecognition();
+        };
 
-            if (!isSpeaking && !isMicManuallyStopped) {
-                tryToStartRecognition();
-            }
-        }
-    };
-
-    recognition.onerror = (event) => {
-        if (event.error === 'aborted') return;
-        console.error("SpeechRecognition error:", event.error);
-        appendMessage("Error", "Microphone error: " + event.error, "error");
-    };
-
-    recognition.onend = () => {
-        startBtn.textContent = "🎤 Start Listening";
-        startBtn.style.backgroundColor = "#bb86fc";
-        if (!isProcessing) {
+        startBtn.onclick = () => {
+            if (speechSynthesis.speaking) speechSynthesis.cancel();
+            isSpeaking = false;
+            isMicManuallyStopped = false;
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
             tryToStartRecognition();
+        };
+
+        stopBtn.onclick = () => {
+            isMicManuallyStopped = true;
+            isProcessing = false;
+            recognition.stop();
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+        };
+    } else {
+        appendMessage("System", "Sorry, your browser does not support the Web Speech API.", "system");
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        voices = speechSynthesis.getVoices();
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = () => { voices = speechSynthesis.getVoices(); };
         }
-    };
-
-    startBtn.onclick = () => {
-        if (speechSynthesis.speaking) {
-            speechSynthesis.cancel();
-        }
-        isSpeaking = false;
-
-        isMicManuallyStopped = false;
-        startBtn.disabled = true;
-        stopBtn.disabled = false;
-        tryToStartRecognition();
-    };
-
-    stopBtn.onclick = () => {
-        isMicManuallyStopped = true;
-        isProcessing = false;
-        recognition.stop();
-        startBtn.disabled = false;
-        stopBtn.disabled = true;
-        startBtn.textContent = "🎤 Start Listening";
-        startBtn.style.backgroundColor = "#bb86fc";
-    };
+        getLocation();
+        setTimeout(() => {
+            const initialGreeting = "Hello, I am ready. How can I assist you today?";
+            appendMessage("AI", initialGreeting, "ai");
+            speak(initialGreeting);
+        }, 500);
+    });
 </script>
 </body>
 </html>
