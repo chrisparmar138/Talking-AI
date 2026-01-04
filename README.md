@@ -1,80 +1,99 @@
-# 🎤 Talking-AI — Voice Command Based Assistant Project
+# 🤖 Talking-AI — Voice Command Based Assistant Project
 
-Talking-AI is a practice project that I built to understand how voice-based interaction and system-level commands work in an assistant-style application. The idea behind this project was to create a program that can take user input through voice, process the command, and perform related actions on the system.
+Talking-AI is a practice-based voice assistant project that allows the user to interact using voice commands. The project is designed to simulate an assistant-style application where the program listens to user input, processes the command, and performs related actions on the system.
 
-While building this project, my main focus was to learn how speech input, command processing, and system interaction connect together inside one application.
+The project focuses on basic voice input handling, command processing, and action-execution workflow in a simple interactive environment.
 
 ---
 
-## ✨ What This Project Can Do
+## ✨ Features
 
-- Listens to user voice commands
+### 🗣 Voice Interaction
+- Accepts voice commands from the user
 - Converts speech into text
-- Understands the meaning of the command
-- Performs actions or responds based on it
-- Can interact with system-level features (where permitted)
+- Processes the command and generates a response
 
-This project helped me understand how assistant-type tools work at a basic level.
+### 🖥 System Interaction
+- Can perform system-level actions (where permitted)
+- Can open / trigger certain applications or functions
+- Works in request → process → action flow
 
----
-
-## 🗣 Voice Interaction Highlights
-
-- Supports voice-based input instead of manual typing
-- Responds back based on the user command
-- Works in request → process → action style flow
-- Encourages hands-free interaction concept
-
-This gave me a good learning experience with voice-driven programs.
+### 💬 Response Handling
+- Provides output or performs relevant actions
+- Supports repeated interaction
 
 ---
 
-## 🖥 System Interaction (Learning Perspective)
+## 📂 Main Components in the Project
 
-The project is capable of:
-
-- Accessing certain system features
-- Executing actions based on commands
-- Opening or interacting with system elements
-
-I mainly explored this feature to understand how applications communicate with the operating system and how permissions affect system-level actions.
-
-> This project was built for learning and experimentation purposes only, not for real-world automation use.
+- Voice input & command capture
+- Command interpretation / processing logic
+- Output / response handling
+- System-level action execution flow
+- Basic UI / interaction screen
 
 ---
 
-## 📂 Main Parts of The Project
+## ▶ Java Version Compatibility
 
-- Voice input & command capture  
-- Command processing logic  
-- Response / output handling  
-- System action execution flow  
+This project is suitable to run with:
 
-Each part helped me understand how different components connect inside an assistant-style project.
+👉 **Java 8 or higher**  
+(Recommended: **JDK 8 / JDK 11**)
 
----
-
-## 🎯 What I Learned From This Project
-
-- Working with voice-based user interaction
-- Translating spoken commands into actions
-- Understanding program communication with the system
-- Structuring a request-response workflow
-- Improving logic building and problem-solving approach
-
-Even though this is a practice project, it played an important role in strengthening my fundamentals.
+Ensure a compatible Java version is installed before running the project.
 
 ---
 
-## 🚀 Future Improvements I’d Like to Add
+## ▶ How to Run This Project in Your Local Environment
 
-- More natural conversation handling
-- Additional voice command support
-- Better safety checks before system actions
-- Improved UI and interaction experience
+This project is intended to run in a local system environment.
+
+Follow these general steps to run it:
+
+1️⃣ Download the project  
+- Download or clone the project folder to your system
+
+2️⃣ Open the project  
+- Open it in your preferred code editor or IDE
+
+3️⃣ Ensure Java is installed  
+- Use Java 8 / Java 11 or a higher compatible version
+
+4️⃣ Configure system permissions if required  
+- Allow microphone / input access (if your system prompts)
+
+5️⃣ Run the project  
+- Run the program from your IDE or local environment
+
+📌 Since this project interacts with system-level actions, setup and behavior may vary across different devices and environments.
+
+---
+
+## ▶ How to Use the Project
+
+1. Start / run the program  
+2. Speak a command when prompted  
+3. The program listens and converts speech to text  
+4. The command is processed  
+5. The assistant performs an action or gives a response
+
+The project is designed for hands-on experimentation with voice-based interaction and command-driven functionality.
+
+---
+
+## 🛠 Tools & Technologies Used
+
+- Java (Compatible with **Java 8 / Java 11 or above**)  
+- Voice / speech input handling  
+- System interaction & command execution  
+- Local development environment  
+- Basic UI & response display components
+
+*(Tools are listed based on core functionality and project structure.)*
 
 ---
 
 ## 📘 Project Status
 
-This is a learning-oriented exploration project that I may continue improving as I work more with interactive, automation-style and assistant-based applications.
+This is a practice-oriented project created for learning and experimentation with voice-based interaction and assistant-style applications. The project may be extended or refined in future versions.
