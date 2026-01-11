@@ -1,0 +1,11 @@
+# Ignore compiled Java classes
+*.class
+
+# Ignore IntelliJ project files
+.idea/
+
+# Ignore Maven target directory
+target/
+
+# Ignore ChatServlet specifically
+.env

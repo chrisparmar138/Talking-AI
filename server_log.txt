@@ -1,0 +1,15 @@
+SLF4J(W): No SLF4J providers were found.
+SLF4J(W): Defaulting to no-operation (NOP) logger implementation
+SLF4J(W): See https://www.slf4j.org/codes.html#noProviders for further details.
+[DIAGNOSTIC] Loaded GROQ_API_KEY: length=56, hexStart=67 73 6B 5F 
+[DIAGNOSTIC] Loaded WEATHER_API_KEY: length=32, hexStart=62 36 38 62 
+[DIAGNOSTIC] Loaded GNEWS_API_KEY: length=32, hexStart=37 35 33 33 
+[DIAGNOSTIC] Loaded YOUTUBE_API_KEY: length=39, hexStart=41 49 7A 61 
+[DIAGNOSTIC] Loaded HF_API_KEY: length=37, hexStart=68 66 5F 68 
+[DIAGNOSTIC] Loaded GOOGLE_API_KEY: length=39, hexStart=41 49 7A 61 
+[DIAGNOSTIC] Loaded SEARCH_ENGINE_ID: length=17, hexStart=64 32 63 64 
+Starting Jetty server on port 8080...
+Server started successfully.
+Groq API Error Status: 401
+Groq API Error Body: {"error":{"message":"Invalid API Key","type":"invalid_request_error","code":"invalid_api_key"}}
+

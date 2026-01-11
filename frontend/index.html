@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Voice Assistant</title>
+
+    <style>
+        /* --- GLOBAL LAYOUT --- */
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        h1 {
+            text-align: center;
+            color: #bb86fc;
+            margin: 10px 0 5px 0;
+            font-weight: 400;
+            font-size: 1.5rem;
+        }
+
+        #status {
+            text-align: center;
+            font-size: 0.9rem;
+            color: #888;
+            height: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            transition: color 0.3s;
+        }
+
+        /* --- CHAT BOX --- */
+        #chat-box {
+            flex-grow: 1;
+            margin: 0 15px 15px 15px;
+            /* Spacing from edges */
+            padding: 20px;
+            background: rgba(30, 30, 30, 0.4);
+            border: 1px solid #333;
+            border-radius: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            scrollbar-width: thin;
+        }
+
+        .message {
+            padding: 12px 18px;
+            border-radius: 18px;
+            max-width: 85%;
+            line-height: 1.5;
+            font-size: 1rem;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .user {
+            align-self: flex-end;
+            background-color: #03dac6;
+            color: #000;
+            border-bottom-right-radius: 2px;
+        }
+
+        .ai {
+            align-self: flex-start;
+            background-color: #333;
+            border: 1px solid #444;
+            color: #fff;
+            border-bottom-left-radius: 2px;
+        }
+
+        .system {
+            align-self: center;
+            color: #888;
+            font-style: italic;
+            font-size: 0.8rem;
+            background: transparent;
+            padding: 0;
+        }
+
+        .img-preview {
+            max-width: 150px;
+            border-radius: 10px;
+            margin-top: 5px;
+            border: 2px solid #bb86fc;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* --- CONTROL BAR (Fixed Bottom) --- */
+        .controls-wrapper {
+            background: #1e1e1e;
+            padding: 15px 20px;
+            border-top: 1px solid #333;
+            width: 100%;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100px;
+            /* Fixed height to prevent jumping */
+        }
+
+        /* VOICE MODE LAYOUT */
+        #voice-controls {
+            display: flex;
+            width: 100%;
+            justify-content: space-between;
+            /* Spreads items: Left, Center, Right */
+            align-items: center;
+        }
+
+        /* 1. KEYBOARD TOGGLE (Left) */
+        #toggle-text-btn {
+            background: #2c2c2c;
+            color: #fff;
+            border: 1px solid #444;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #toggle-text-btn:hover {
+            background: #444;
+        }
+
+        /* 2. MIC BUTTON (Center) */
+        #mic-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+        }
+
+        #mic-btn {
+            background-color: #bb86fc;
+            color: #000;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(187, 134, 252, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+
+        #mic-btn:active {
+            transform: scale(0.95);
+        }
+
+        #mic-btn.listening {
+            background-color: #cf6679;
+            color: white;
+            animation: pulse 1.5s infinite;
+        }
+
+        /* 3. STOP BUTTON (Replaces Mic when needed) */
+        #stop-btn {
+            background-color: #cf6679;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1rem;
+            display: none;
+            /* Hidden default */
+            box-shadow: 0 4px 15px rgba(207, 102, 121, 0.4);
+        }
+
+        /* 4. TEXT MODE LAYOUT (Hidden Default) */
+        #text-controls {
+            display: none;
+            /* Hidden */
+            width: 100%;
+            gap: 10px;
+            align-items: center;
+        }
+
+        input[type="text"] {
+            flex-grow: 1;
+            padding: 12px;
+            border-radius: 25px;
+            border: 1px solid #555;
+            background: #2c2c2c;
+            color: #fff;
+            text-indent: 10px;
+            outline: none;
+            font-size: 1rem;
+        }
+
+        input[type="text"]:focus {
+            border-color: #bb86fc;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: none;
+            color: #aaa;
+            font-size: 1.4rem;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .icon-btn:hover {
+            color: #fff;
+        }
+
+        #send-btn {
+            background: #03dac6;
+            color: #000;
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(207, 102, 121, 0.7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 20px rgba(207, 102, 121, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(207, 102, 121, 0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>AI Voice Assistant</h1>
+        <div id="status">Ready</div>
+
+        <div id="chat-box"></div>
+
+        <div id="preview-container" style="display: none; padding: 10px; text-align: center;">
+            <img id="image-preview" class="img-preview" />
+        </div>
+
+        <div class="controls-wrapper">
+
+            <div id="voice-controls">
+                <button id="toggle-text-btn" title="Switch to Typing">⌨️</button>
+
+                <div id="mic-container">
+                    <button id="mic-btn" title="Tap to Speak">🎤</button>
+                    <button id="stop-btn">STOP</button>
+                </div>
+
+                <div style="width: 50px;"></div>
+            </div>
+
+            <div id="text-controls">
+                <button id="close-text-btn" class="icon-btn" title="Back to Voice">✖</button>
+                <button id="attach-btn" class="icon-btn" title="Upload Image">📎</button>
+                <input type="file" id="file-input" accept="image/*" style="display: none;">
+                <input type="text" id="text-input" placeholder="Type a message..." />
+                <button id="send-btn">➤</button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // DOM ELEMENTS
+        const chatBox = document.getElementById("chat-box");
+        const statusDiv = document.getElementById("status");
+
+        // Voice Mode Elements
+        const voiceControls = document.getElementById("voice-controls");
+        const micBtn = document.getElementById("mic-btn");
+        const stopBtn = document.getElementById("stop-btn");
+        const toggleTextBtn = document.getElementById("toggle-text-btn");
+
+        // Text Mode Elements
+        const textControls = document.getElementById("text-controls");
+        const closeTextBtn = document.getElementById("close-text-btn");
+        const textInput = document.getElementById("text-input");
+        const fileInput = document.getElementById("file-input");
+        const attachBtn = document.getElementById("attach-btn");
+        const sendBtn = document.getElementById("send-btn");
+        const previewContainer = document.getElementById("preview-container");
+        const imgPreview = document.getElementById("image-preview");
+
+        // STATE
+        let currentBase64Image = null;
+        let availableVoices = [];
+        let currentUtterance = null;
+        let isAiSpeaking = false;
+        let autoListen = true;
+
+        // 0. LOAD VOICES
+        function loadVoices() {
+            availableVoices = window.speechSynthesis.getVoices();
+            if (availableVoices.length > 0) statusDiv.innerText = "Ready";
+        }
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+        setTimeout(loadVoices, 500);
+
+        // 1. SWITCH MODES (Text vs Voice)
+        toggleTextBtn.onclick = () => {
+            voiceControls.style.display = "none";
+            textControls.style.display = "flex";
+            textInput.focus();
+            autoListen = false; // Stop auto-listening while typing
+            window.speechSynthesis.cancel(); // Quiet down
+        };
+
+        closeTextBtn.onclick = () => {
+            textControls.style.display = "none";
+            voiceControls.style.display = "flex";
+            autoListen = true; // Re-enable auto listening
+            statusDiv.innerText = "Ready";
+        };
+
+        // 2. STOP BUTTON
+        stopBtn.onclick = () => {
+            window.speechSynthesis.cancel();
+            isAiSpeaking = false;
+            stopBtn.style.display = "none";
+            micBtn.style.display = "flex";
+            statusDiv.innerText = "Stopped";
+            autoListen = false; // User stopped explicitly
+        };
+
+        // 3. MICROPHONE LOGIC
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'en-US';
+
+        function startListening() {
+            // Only listen if in Voice Mode AND AI isn't speaking
+            if (isAiSpeaking || textControls.style.display === "flex") return;
+
+            try {
+                recognition.start();
+                micBtn.classList.add("listening");
+                statusDiv.innerText = "Listening...";
+                statusDiv.style.color = "#cf6679";
+            } catch (e) { console.log("Mic busy"); }
+        }
+
+        micBtn.onclick = () => {
+            autoListen = true; // Enable loop
+            startListening();
+        };
+
+        recognition.onresult = (e) => {
+            micBtn.classList.remove("listening");
+            statusDiv.innerText = "Thinking...";
+            statusDiv.style.color = "#bb86fc";
+            sendMessage(e.results[0][0].transcript);
+        };
+
+        recognition.onend = () => {
+            micBtn.classList.remove("listening");
+            if (!isAiSpeaking && statusDiv.innerText === "Listening...") {
+                statusDiv.innerText = "Ready";
+            }
+        };
+
+        // 4. SEND MESSAGE
+        async function sendMessage(text) {
+            if (!text && !currentBase64Image) return;
+
+            addMessage("User", text, "user", currentBase64Image);
+
+            const imageToSend = currentBase64Image;
+            textInput.value = "";
+            currentBase64Image = null;
+            previewContainer.style.display = "none";
+            fileInput.value = "";
+
+            // If in Text Mode, switch back to Voice Mode to hear answer? 
+            // Optional: Uncomment next line to auto-close keyboard after sending
+            // closeTextBtn.click(); 
+
+            const loadingId = addMessage("System", "Thinking...", "system");
+
+            try {
+                let locationData = null;
+                try {
+                    const p = await new Promise((r, j) => navigator.geolocation.getCurrentPosition(r, j, { timeout: 1500 }));
+                    locationData = { latitude: p.coords.latitude, longitude: p.coords.longitude };
+                } catch (e) { }
+
+                const res = await fetch("http://localhost:8080/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        message: text,
+                        image: imageToSend,
+                        location: locationData,
+                        lang: navigator.language
+                    })
+                });
+
+                const data = await res.json();
+                document.getElementById(loadingId).remove();
+
+                if (data.reply) {
+                    addMessage("AI", data.reply, "ai");
+                    speak(data.reply);
+                }
+
+            } catch (err) {
+                document.getElementById(loadingId).innerText = "Error: " + err.message;
+            }
+        }
+
+        // 5. SPEAK FUNCTION (Controls UI State)
+        function speak(text) {
+            window.speechSynthesis.cancel();
+
+            let cleanText = text.replace(/(https?:\/\/[^\s]+)/g, "link").replace(/[\*#_`~]/g, "").replace("///CMD///", "").trim();
+            if (!cleanText) {
+                if (autoListen) startListening();
+                return;
+            }
+
+            currentUtterance = new SpeechSynthesisUtterance(cleanText);
+
+            if (availableVoices.length === 0) loadVoices();
+            const isHindi = /[\u0900-\u097F]/.test(text);
+
+            if (isHindi) {
+                currentUtterance.lang = 'hi-IN';
+                const v = availableVoices.find(v => v.lang.includes('hi'));
+                if (v) currentUtterance.voice = v;
+            } else {
+                currentUtterance.lang = 'en-US';
+                const v = availableVoices.find(v => v.name.includes('Google US') || v.name.includes('Zira'));
+                if (v) currentUtterance.voice = v;
+            }
+
+            // EVENTS
+            currentUtterance.onstart = () => {
+                isAiSpeaking = true;
+                if (voiceControls.style.display !== 'none') {
+                    micBtn.style.display = "none";
+                    stopBtn.style.display = "block";
+                }
+                statusDiv.innerText = "Speaking...";
+                statusDiv.style.color = "#03dac6";
+            };
+
+            currentUtterance.onend = () => {
+                isAiSpeaking = false;
+                if (voiceControls.style.display !== 'none') {
+                    stopBtn.style.display = "none";
+                    micBtn.style.display = "flex";
+                }
+                statusDiv.innerText = "Ready";
+
+                // AUTO LISTEN AFTER SPEAKING
+                if (autoListen) {
+                    setTimeout(startListening, 500);
+                }
+            };
+
+            window.speechSynthesis.speak(currentUtterance);
+        }
+
+        // HELPERS
+        function addMessage(sender, text, type, imgData) {
+            const div = document.createElement("div");
+            div.id = "msg-" + Date.now();
+            div.className = `message ${type}`;
+            div.innerHTML = text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color:#03dac6">$1</a>').replace(/\n/g, "<br>");
+            if (imgData) {
+                const img = document.createElement("img");
+                img.src = imgData; img.className = "img-preview";
+                div.appendChild(img);
+            }
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return div.id;
+        }
+
+        // INPUT HANDLERS
+        attachBtn.onclick = () => fileInput.click();
+        fileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const r = new FileReader();
+                r.onload = (evt) => {
+                    currentBase64Image = evt.target.result;
+                    imgPreview.src = currentBase64Image;
+                    previewContainer.style.display = "block";
+                };
+                r.readAsDataURL(file);
+            }
+        };
+        sendBtn.onclick = () => sendMessage(textInput.value);
+        textInput.onkeypress = (e) => { if (e.key === "Enter") sendMessage(textInput.value); };
+
+        loadVoices();
+    </script>
+</body>
+
+</html>
